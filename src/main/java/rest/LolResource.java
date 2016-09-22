@@ -47,7 +47,6 @@ public class LolResource {
         Summoner summoner = summoners.get(summonerName);
 
         CurrentGameInfo currentGameInfo = riotApiClient.getCurrentGameInfoById(summoner.getId());
-        System.out.println(currentGameInfo);
 
         System.out.println(currentGameInfo);
 

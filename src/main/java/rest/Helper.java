@@ -19,12 +19,14 @@ import java.util.Map;
 public class Helper {
 
     private static final String KEY_STONES = "6161,6162,6164,6361,6362,6363,6261,6262,6263";
+    private static final String basePath = "";
+
 
     @Autowired
     RiotApiClient riotApiClient;
     private GlobalCache globalCache = GlobalCache.getInstance();
 
-    public Map<String, List<LeagueDto>> getLeagueInfoFromCurrentGame(CurrentGameInfo liveGameInfo){
+    public Map<String, List<LeagueDto>> getLeagueInfoFromCurrentGame(CurrentGameInfo liveGameInfo) {
         Map<String, List<LeagueDto>> data;
         String playerIds = "";
         for (CurrentGameParticipant player : liveGameInfo.getParticipants()) {
@@ -41,39 +43,49 @@ public class Helper {
 
     }
 
-    public List<SummonerInfo> getSummonersWithDivisionInfo(Map<String, List<LeagueDto>> data, CurrentGameInfo currentGameInfo){
+    public List<SummonerInfo> getSummonersWithDivisionInfo(Map<String, List<LeagueDto>> data, CurrentGameInfo currentGameInfo) {
         List<SummonerInfo> summoners = new ArrayList<SummonerInfo>();
 
-        for (List<LeagueDto> listOfLeagueDto : data.values()) {
-            for (LeagueDto leagueDto : listOfLeagueDto) {
-                if (leagueDto.getQueue().equals("RANKED_SOLO_5x5")) {
-                    for (LeagueEntryDto leagueEntryDto : leagueDto.getEntries()) {
-                        SummonerInfo summonerInfo = new SummonerInfo();
 
-                        SoloqDivision division = buildDivisionFromLeagueEntry(leagueEntryDto, leagueDto);
-                        summonerInfo.setSoloqDivison(division);
-                        summonerInfo.setSummonerName(leagueEntryDto.getPlayerOrTeamName());
-                        summonerInfo.setSummonerId(Long.valueOf(leagueEntryDto.getPlayerOrTeamId()));
+        for (CurrentGameParticipant participant : currentGameInfo.getParticipants()) {
+            boolean isUnranked = true;
 
-                        for(CurrentGameParticipant participant : currentGameInfo.getParticipants()){
-                            if(participant.getSummonerName().equals(summonerInfo.getSummonerName())){
-                                summonerInfo.setTeamId(participant.getTeamId());
-                                summonerInfo.setRuneInfo(buildRuneInfoFromGameParticipant(participant));
-                                summonerInfo.setImgInfo(buildImgInfoFromGameParticipant(participant, leagueDto));
+            SummonerInfo summonerInfo = new SummonerInfo();
+            summonerInfo.setTeamId(participant.getTeamId());
+            summonerInfo.setRuneInfo(buildRuneInfoFromGameParticipant(participant));
+            summonerInfo.setSummonerName(participant.getSummonerName());
+            summonerInfo.setSummonerId(participant.getSummonerId());
+            summonerInfo.setChampionName(globalCache.getChampionInfo().get(participant.getChampionId()).getName());
+            summonerInfo.setImgInfo(buildImgInfoFromGameParticipant(participant));
+            summonerInfo.setRuneInfo(buildRuneInfoFromGameParticipant(participant));
+
+            for (List<LeagueDto> listOfLeagueDto : data.values()) {
+                for (LeagueDto leagueDto : listOfLeagueDto) {
+                    if (leagueDto.getQueue().equals("RANKED_SOLO_5x5")) {
+                        for (LeagueEntryDto leagueEntryDto : leagueDto.getEntries()) {
+                            if (summonerInfo.getSummonerName().equals(leagueEntryDto.getPlayerOrTeamName())) {
+                                summonerInfo.getImgInfo().setDivisionImg(basePath + leagueDto.getTier().toLowerCase());
+                                summonerInfo.setSoloqDivison(buildDivisionFromLeagueEntry(leagueEntryDto, leagueDto));
+                                isUnranked = false;
                             }
                         }
-                        summoners.add(summonerInfo);
                     }
                 }
             }
-        }
 
+            if(isUnranked){
+                summonerInfo.setSoloqDivison(getSoloqForUnranked());
+                summonerInfo.getImgInfo().setDivisionImg(basePath + "provisional");
+            }
+
+            summoners.add(summonerInfo);
+        }
         return summoners;
     }
 
-    private List<RuneInfo> buildRuneInfoFromGameParticipant(CurrentGameParticipant participant){
+    private List<RuneInfo> buildRuneInfoFromGameParticipant(CurrentGameParticipant participant) {
         List<RuneInfo> runeInfos = new ArrayList<RuneInfo>();
-        for(Rune rune : participant.getRunes()){
+        for (Rune rune : participant.getRunes()) {
             RuneInfo runeInfo = new RuneInfo();
             RuneImageInfo runeImageInfo = new RuneImageInfo();
             RuneStats runeStats = new RuneStats();
@@ -93,9 +105,18 @@ public class Helper {
         return runeInfos;
     }
 
-    public List<BannedChampionInfo> getBannedChampionInfoByCurrentGame(CurrentGameInfo currentGame){
+    private SoloqDivision getSoloqForUnranked(){
+        SoloqDivision soloqDivision = new SoloqDivision();
+        soloqDivision.setDivisionName("Unranked");
+        soloqDivision.setTier("Unranked");
+        soloqDivision.setLosses(0);
+        soloqDivision.setWins(0);
+        return soloqDivision;
+    }
+
+    public List<BannedChampionInfo> getBannedChampionInfoByCurrentGame(CurrentGameInfo currentGame) {
         List<BannedChampionInfo> bannedChampions = new ArrayList<BannedChampionInfo>();
-        for(BannedChampion bannedChampion : currentGame.getBannedChampions()){
+        for (BannedChampion bannedChampion : currentGame.getBannedChampions()) {
             BannedChampionInfo bannedChampionInfo = new BannedChampionInfo();
             bannedChampionInfo.setChampionId(bannedChampion.getChampionId());
             bannedChampionInfo.setTeamId(bannedChampion.getTeamId());
@@ -106,7 +127,7 @@ public class Helper {
         return bannedChampions;
     }
 
-    private SoloqDivision buildDivisionFromLeagueEntry(LeagueEntryDto leagueEntry, LeagueDto leagueDto){
+    private SoloqDivision buildDivisionFromLeagueEntry(LeagueEntryDto leagueEntry, LeagueDto leagueDto) {
         SoloqDivision soloqDivision = new SoloqDivision();
         soloqDivision.setDivsionRank(leagueEntry.getDivision());
         soloqDivision.setWins(leagueEntry.getWins());
@@ -118,8 +139,7 @@ public class Helper {
         return soloqDivision;
     }
 
-    public ImgInfo buildImgInfoFromGameParticipant(CurrentGameParticipant participant, LeagueDto leagueDto){
-        String basePath = "";
+    public ImgInfo buildImgInfoFromGameParticipant(CurrentGameParticipant participant/*, LeagueDto leagueDto*/) {
         String suffix = ".png";
         ImgInfo imgInfo = new ImgInfo();
         imgInfo.setSummonerSpell1Img(globalCache.getSummonerSpellInfo().get(participant.getSpell1Id()).getId());
@@ -127,14 +147,13 @@ public class Helper {
         imgInfo.setChampionImg(globalCache.getChampionInfo().get(participant.getChampionId()).getImage().getFull());
         imgInfo.setProfileImg(basePath + participant.getProfileIconId() + suffix);
         imgInfo.setMasteryImg(getKeyStoneForParticipant(participant));
-        imgInfo.setDivisionImg(basePath + leagueDto.getTier().toLowerCase());
 
         return imgInfo;
     }
 
-    private String getKeyStoneForParticipant(CurrentGameParticipant participant){
-        for(Mastery mastery: participant.getMasteries()){
-            if(KEY_STONES.contains( String.valueOf(mastery.getMasteryId())))
+    private String getKeyStoneForParticipant(CurrentGameParticipant participant) {
+        for (Mastery mastery : participant.getMasteries()) {
+            if (KEY_STONES.contains(String.valueOf(mastery.getMasteryId())))
                 return globalCache.getMasteryInfo().get(mastery.getMasteryId()).getImage().getFull();
         }
         return null;
