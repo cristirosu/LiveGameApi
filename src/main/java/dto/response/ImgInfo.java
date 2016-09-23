@@ -10,7 +10,7 @@ public class ImgInfo {
     private static final String PROFILE_IMG_BASE_PATH = "http://ddragon.leagueoflegends.com/cdn/6.18.1/img/profileicon/";
     private static final String SUMMONER_SPELL_IMG_BASE_PATH = "http://ddragon.leagueoflegends.com/cdn/6.18.1/img/spell/";
     private static final String MASTERY_IMG_BASE_PATH = "http://ddragon.leagueoflegends.com/cdn/6.18.1/img/mastery/";
-    private static final String DIVISION_IMG_BASE_PATH = "http://localhost:8080/RESTfulExample/base_icons/";
+    private static final String DIVISION_IMG_BASE_PATH = "http://212.24.104.208:8080/RESTfulExample/base_icons/";
     private static final String IMG_EXTENSION = ".png";
     private String championImg;
     private String summonerSpell1Img;

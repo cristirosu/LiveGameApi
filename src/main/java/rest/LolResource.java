@@ -4,7 +4,9 @@ import cache.GlobalCache;
 import dto.*;
 import dto.response.SummonerInfo;
 import dto.response.LiveGameInfoResponse;
+import error.ErrorResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import javax.ws.rs.*;
 import javax.ws.rs.GET;
@@ -38,15 +40,40 @@ public class LolResource {
 
         System.out.println(globalCache);
 
-        if (globalCache.getChampionInfo().isEmpty()){
+        Boolean isValidName = helper.validateSummonerName(summonerName);
+
+        if (!isValidName) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .header("Access-Control-Allow-Origin", "*")
+                    .build();
+        }
+
+        summonerName = helper.sanitize(summonerName);
+
+        if (globalCache.getChampionInfo().isEmpty()) {
             riotStaticDataClient.populateCache();
         }
 
+        if (globalCache.getSummoners().get(summonerName) == null) {
+            Map<String, Summoner> summoners = riotApiClient.getBasicSummonerInfo(summonerName);
+            if (summoners == null) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity(new ErrorResponse("Summoner " + summonerName + " does not exists"))
+                        .header("Access-Control-Allow-Origin", "*")
+                        .build();
+            }
+            globalCache.getSummoners().put(summonerName, summoners.get(summonerName));
+        }
 
-        Map<String, Summoner> summoners = riotApiClient.getBasicSummonerInfo(summonerName);
-        Summoner summoner = summoners.get(summonerName);
-
+        Summoner summoner = globalCache.getSummoners().get(summonerName);
         CurrentGameInfo currentGameInfo = riotApiClient.getCurrentGameInfoById(summoner.getId());
+
+        if (currentGameInfo == null) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(new ErrorResponse("Summoner " + summonerName + " is not in an active game"))
+                    .header("Access-Control-Allow-Origin", "*")
+                    .build();
+        }
 
         System.out.println(currentGameInfo);
 
@@ -63,7 +90,9 @@ public class LolResource {
         List<SummonerInfo> summonersWithLeagueInfo = helper.getSummonersWithDivisionInfo(leaguesInfo, currentGameInfo);
         liveGameResponse.setSummoners(summonersWithLeagueInfo);
 
-        return Response.status(200).entity(liveGameResponse).build();
+        System.out.println(globalCache.getSummoners());
+
+        return Response.status(200).header("Access-Control-Allow-Origin", "*").entity(liveGameResponse).build();
     }
 
     @GET

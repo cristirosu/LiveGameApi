@@ -1,6 +1,7 @@
 package cache;
 
 import dto.Mastery;
+import dto.Summoner;
 import dto.response.RuneInfo;
 import dto.staticdata.Champion;
 import dto.staticdata.MasteryInfo;
@@ -18,6 +19,7 @@ public class GlobalCache {
     private Map<Long, SummonerSpell> summonerSpellInfo = new HashMap<Long, SummonerSpell>();
     private Map<Long, MasteryInfo> masteryInfo = new HashMap<Long, MasteryInfo>();
     private Map<String, RuneInfo> runeInfo = new HashMap<String, RuneInfo>();
+    private Map<String, Summoner> summoners = new HashMap<String, Summoner>();
     public static GlobalCache instance;
 
     public Map<Long, Champion> getChampionInfo() {
@@ -50,6 +52,14 @@ public class GlobalCache {
 
     public void setMasteryInfo(Map<Long, MasteryInfo> masteryInfo) {
         this.masteryInfo = masteryInfo;
+    }
+
+    public Map<String, Summoner> getSummoners() {
+        return summoners;
+    }
+
+    public void setSummoners(Map<String, Summoner> summoners) {
+        this.summoners = summoners;
     }
 
     public static GlobalCache getInstance(){

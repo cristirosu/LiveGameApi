@@ -5,6 +5,7 @@ import dto.*;
 import dto.response.*;
 import dto.staticdata.RuneImageInfo;
 import dto.staticdata.RuneStats;
+import jdk.nashorn.internal.runtime.regexp.joni.Regex;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
@@ -12,6 +13,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by User on 9/9/2016.
@@ -20,7 +23,6 @@ public class Helper {
 
     private static final String KEY_STONES = "6161,6162,6164,6361,6362,6363,6261,6262,6263";
     private static final String basePath = "";
-
 
     @Autowired
     RiotApiClient riotApiClient;
@@ -158,6 +160,17 @@ public class Helper {
         }
         return null;
     }
+
+    public String sanitize(String text){
+        return text.replaceAll(" ","").toLowerCase();
+    }
+
+    public boolean validateSummonerName(String summonerName){
+        Pattern p = Pattern.compile("^[Ç ü é â ä à å ç ê ë è ï î ì Ä Å É æ Æ ô ö ò û ù ÿ Ö Ü \u0083 á í ó ú ñ Ñ ª º ß µ \u0088 \u008A \u008C \u008E \u009A \u009C \u009E \u009F À Á Â Ã Ä Å È É Ê Ë Ì Í Î Ï Ð Ñ Ò Ó Ô Õ Ö Ø Ù Ú Û Ü Ý Þ ã ð ý þ a-zA-Z0-9\\\\p{L} _\\\\.]+$");
+        Matcher m = p.matcher(summonerName);
+        return m.matches();
+    }
+
 
 
     public RiotApiClient getRiotApiClient() {
